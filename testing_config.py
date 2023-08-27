@@ -1,0 +1,7 @@
+import os
+
+WALLET_ADDRESS = os.environ.get("WALLET_ADDRESS")
+WALLET_SECRET_KEY = os.environ.get("WALLET_SECRET_KEY")
+
+TEMP_WALLET_ADDRESS = os.environ.get("TEMP_WALLET_ADDRESS")
+TEMP_WALLET_SECRET_KEY = os.environ.get("TEMP_WALLET_SECRET_KEY")
