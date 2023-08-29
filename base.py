@@ -8,6 +8,7 @@ from decimal import Decimal
 
 class Networks(Enum):
     BSC: str = "BSC"
+    ETHEREUM: str = "ETH"
 
 
 @dataclass
