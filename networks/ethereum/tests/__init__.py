@@ -1,11 +1,11 @@
 import pytest
 from base import (
-    BaseNetwork,
     Wallet,
     Token
 )
 
 from ..ethereum import EthereumNetwork
+from web3.providers import HTTPProvider
 
 from testing_config import (
     WALLET_ADDRESS,
@@ -17,7 +17,7 @@ from testing_config import (
 
 @pytest.fixture(scope="package")
 def network():
-    network = EthereumNetwork("https://eth-goerli.g.alchemy.com/v2/demo")
+    network = EthereumNetwork(provider=HTTPProvider("https://eth-goerli.g.alchemy.com/v2/demo"))
     return network
 
 

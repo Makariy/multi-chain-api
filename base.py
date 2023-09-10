@@ -1,14 +1,17 @@
-from typing import List, Dict, TypeAlias, Any
+from typing import TypeAlias, Any
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
 
 from decimal import Decimal
 
+from exceptions import NotEnoughGas, NotEnoughTokenBalance
+
 
 class Networks(Enum):
     BSC: str = "BSC"
     ETHEREUM: str = "ETH"
+    TRON: str = "TRON"
 
 
 @dataclass
@@ -22,7 +25,7 @@ class Wallet:
 class Token:
     network: Networks
     contract_address: str
-    abi: List[Dict]
+    abi: Any
     name: str
     decimal_places: int  # No need in case of eth compatible
 
@@ -31,8 +34,20 @@ TXHash: TypeAlias = Any
 
 
 class BaseNetwork(ABC):
-    def __init__(self, endpoint: str):
-        self.endpoint = endpoint
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def _assert_wallet_has_enough_gas(self, wallet: Wallet, gas: int):
+        current_balance = self.get_gas_balance(wallet)
+        if current_balance < gas:
+            raise NotEnoughGas(f"Not enough gas to execute the transfer: "
+                               f"{current_balance=} < {gas=}")
+
+    def _assert_wallet_has_enough_tokens(self, wallet: Wallet, token: Token, amount: Decimal):
+        current_balance = self.get_token_balance(wallet, token)
+        if current_balance < amount:
+            raise NotEnoughTokenBalance(f"Not enough token balance to execute the transfer: "
+                                        f"{current_balance=} < {amount=}")
 
     @property
     @abstractmethod
@@ -66,7 +81,7 @@ class BaseNetwork(ABC):
             address_from: str,
             address_to: str,
             token: Token,
-            amount: Decimal
+            amount: int
     ) -> int:
         pass
 
@@ -83,7 +98,8 @@ class BaseNetwork(ABC):
         pass
 
     @abstractmethod
-    def await_transaction(self, tx_hash: TXHash):
+    def await_transaction(self, tx_hash: TXHash, timeout: float = 10 * 60):
+        # Timeout in seconds
         pass
 
     @abstractmethod

@@ -1,6 +1,6 @@
 from typing import Dict, Tuple, Union
 
-from web3 import HTTPProvider, Web3
+from web3 import Web3
 from web3.contract import Contract
 from web3.middleware import geth_poa_middleware
 
@@ -17,7 +17,8 @@ from base import (
     Token,
     TXHash
 )
-from exceptions import NotEnoughGas, NotEnoughTokenBalance
+
+from .middleware import rps_limit_middleware
 
 import logging
 
@@ -33,14 +34,27 @@ def convert_addresses_to_checksum(w3: Web3, *addresses) -> Union[ChecksumAddress
 
 class EthereumNetwork(BaseNetwork):
     name = Networks.ETHEREUM
+    ETH_TO_WEI = 10 ** 18
 
-    def __init__(self, *args, **kwargs):
+    def __init__(
+            self,
+            rps_limit: float = 1.,
+            sleep_time: float = .1,
+            *args,
+            **kwargs
+    ):
         super().__init__(*args, **kwargs)
-        self._w3 = self._init_w3()
+        self._w3 = self._init_w3(rps_limit, sleep_time, **kwargs)
 
-    def _init_w3(self) -> Web3:
-        w3 = Web3(HTTPProvider(self.endpoint))
+    def _init_w3(self, rps_limit: float, sleep_time: float, **kwargs) -> Web3:
+        w3 = Web3(**kwargs)
         w3.middleware_onion.inject(geth_poa_middleware, layer=0)  # Inject middleware for Goerli
+        w3.middleware_onion.add(
+            rps_limit_middleware(
+                rps_limit=rps_limit,
+                sleep_time=sleep_time
+            )
+        )
         return w3
 
     def _create_contract_from_token(self, token: Token) -> Contract:
@@ -51,18 +65,6 @@ class EthereumNetwork(BaseNetwork):
         contract = self._create_contract_from_token(token)
         transfer = contract.functions.transfer(address_checksum, token_wei)
         return transfer
-
-    def _assert_wallet_has_enough_gas(self, wallet: Wallet, gas: int):
-        current_balance = self.get_gas_balance(wallet)
-        if current_balance < gas:
-            raise NotEnoughGas(f"Not enough gas to execute the transfer: "
-                               f"{current_balance=} < {gas=}")
-
-    def _assert_wallet_has_enough_tokens(self, wallet: Wallet, token: Token, amount: Decimal):
-        current_balance = self.get_token_balance(wallet, token)
-        if current_balance < amount:
-            raise NotEnoughTokenBalance(f"Not enough token balance to execute the transfer: "
-                                        f"{current_balance=} < {amount=}")
 
     def _sign_transaction(self, wallet: Wallet, transaction_data: Dict) -> SignedTransaction:
         return self._w3.eth.account.sign_transaction(

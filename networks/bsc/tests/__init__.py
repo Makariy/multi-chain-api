@@ -1,11 +1,11 @@
 import pytest
 from base import (
-    BaseNetwork,
     Wallet,
     Token
 )
 
 from ..bsc import BSCNetwork
+from web3 import HTTPProvider
 
 from testing_config import (
     WALLET_ADDRESS,
@@ -17,7 +17,7 @@ from testing_config import (
 
 @pytest.fixture(scope="package")
 def network():
-    network = BSCNetwork("https://data-seed-prebsc-1-s1.binance.org:8545")
+    network = BSCNetwork(provider=HTTPProvider("https://data-seed-prebsc-1-s1.binance.org:8545"))
     return network
 
 

@@ -25,7 +25,7 @@ def test_get_gas_price(network: BaseNetwork):
     assert gas_price > 0
 
 
-def test_usdt_balance(network: BaseNetwork, token: Token, wallet: Wallet):
+def test_token_balance(network: BaseNetwork, token: Token, wallet: Wallet):
     balance = network.get_token_balance(wallet, token)
     assert balance > 0
 
@@ -76,7 +76,7 @@ def test_transfer_token(network: BaseNetwork, wallet: Wallet, temp_wallet: Walle
     new_temp_wallet_balance = network.get_token_balance(temp_wallet, token)
 
     assert round(amount / new_temp_wallet_balance) == 1  # There could be some precision errors
-    assert round(new_main_wallet_balance / main_wallet_balance - amount) == 1  # There could be some precision errors
+    assert round(new_main_wallet_balance / (main_wallet_balance - amount)) == 1  # There could be some precision errors
 
     # Return the tokens
     tx_hash = move_all_token_funds(network, temp_wallet, wallet, token)

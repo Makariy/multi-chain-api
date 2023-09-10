@@ -6,3 +6,7 @@ class NotEnoughGas(Exception):
 
 class NotEnoughTokenBalance(Exception):
     pass
+
+
+class ExternalError(Exception):
+    pass
