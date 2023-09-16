@@ -1,3 +1,4 @@
+from typing import Type
 from decimal import Decimal
 import time
 
@@ -9,8 +10,12 @@ from base import (
 )
 
 from tronpy import Tron, Contract
+from tronpy.providers import HTTPProvider as TRONHTTPProvider
 from tronpy.keys import PrivateKey
 from tronpy.exceptions import TransactionNotFound
+
+from providers import BaseProvider
+from providers.http_provider import HTTPProvider
 
 from exceptions import ExternalError
 
@@ -25,19 +30,25 @@ class TronNetwork(BaseNetwork):
     _GAS_LIMIT_FOR_SEND_GAS: int = 4 * 10 ** 5
     _GAS_LIMIT_FOR_SEND_TOKEN: int = 20 * 10 ** 6
 
-    def __init__(
-            self,
-            *args,
-            **kwargs
-    ):
-        super().__init__(*args, **kwargs)
-        self._init_tron(**kwargs)
+    def __init__(self, provider: BaseProvider):
+        super().__init__(provider)
+        self._init_tron(provider)
 
-    def _init_tron(
-            self,
-            **kwargs
-    ):
-        self._tron = Tron(**kwargs)
+    def _create_http_tron_provider(self, provider: HTTPProvider) -> Tron:
+        tron_provider = TRONHTTPProvider(
+            endpoint_uri=provider.endpoint,
+            api_key=provider.api_key,
+        )
+        if provider.proxy:
+            tron_provider.sess.proxies = provider.proxy.params
+
+        return Tron(tron_provider)
+
+    def _init_tron(self, provider: BaseProvider):
+        if isinstance(provider, HTTPProvider):
+            self._tron = self._create_http_tron_provider(provider)
+        else:
+            raise NotImplementedError(f"Provider {provider} is not implemented for {self.name}")
 
     def _get_contract_for_token(self, token: Token) -> Contract:
         return self._tron.get_contract(token.contract_address)

@@ -13,7 +13,7 @@ def rps_limit_middleware(rps_limit: float = 1., sleep_time: float = 0.1):
             while True:
                 if not last_request_time:
                     break
-                if time.time() > last_request_time + rps_limit:
+                if time.time() > last_request_time + 1 / rps_limit:
                     break
                 time.sleep(sleep_time)
 

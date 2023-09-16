@@ -1,6 +1,6 @@
 import pytest
 from networks.tron.tron import TronNetwork
-from tronpy.providers import HTTPProvider
+from providers.http_provider import HTTPProvider
 
 from base import Wallet, Networks, Token
 
@@ -9,10 +9,9 @@ from base import Wallet, Networks, Token
 def network():
     return TronNetwork(
         provider=HTTPProvider(
-            "https://nile.trongrid.io",
+            endpoint="https://nile.trongrid.io",
             api_key="53902d63-9be9-4720-aa36-46af9d36e489",
-        ),
-        network="nile"
+        )
     )
 
 

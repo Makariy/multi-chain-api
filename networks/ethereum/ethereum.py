@@ -1,12 +1,15 @@
 from typing import Dict, Tuple, Union
 
 from web3 import Web3
+from web3 import HTTPProvider as W3HTTPProvider
 from web3.contract import Contract
 from web3.middleware import geth_poa_middleware
 
 from eth_typing.evm import ChecksumAddress
 from eth_account.datastructures import SignedTransaction
 
+from providers import BaseProvider
+from providers.http_provider import HTTPProvider
 
 from decimal import Decimal
 
@@ -19,6 +22,7 @@ from base import (
 )
 
 from .middleware import rps_limit_middleware
+from .provider_params import ETHProviderExtra
 
 import logging
 
@@ -35,27 +39,40 @@ def convert_addresses_to_checksum(w3: Web3, *addresses) -> Union[ChecksumAddress
 class EthereumNetwork(BaseNetwork):
     name = Networks.ETHEREUM
     ETH_TO_WEI = 10 ** 18
+    gas_error = 100_000
 
-    def __init__(
-            self,
-            rps_limit: float = 1.,
-            sleep_time: float = .1,
-            *args,
-            **kwargs
-    ):
-        super().__init__(*args, **kwargs)
-        self._w3 = self._init_w3(rps_limit, sleep_time, **kwargs)
+    def __init__(self, provider: BaseProvider):
+        super().__init__(provider)
+        self._init_w3(provider)
 
-    def _init_w3(self, rps_limit: float, sleep_time: float, **kwargs) -> Web3:
-        w3 = Web3(**kwargs)
+    def _create_middleware(self, provider: HTTPProvider):
+        rps_limit = 0.3
+        sleep_time = 0.1
+        if provider.extra and isinstance(provider.extra, ETHProviderExtra):
+            rps_limit = provider.extra.rps_limit
+            sleep_time = provider.extra.sleep_time
+
+        return rps_limit_middleware(
+            rps_limit=rps_limit,
+            sleep_time=sleep_time
+        )
+
+    def _create_http_w3_provider(self, provider: HTTPProvider) -> Web3:
+        w3_provider = W3HTTPProvider(
+            endpoint_uri=provider.endpoint
+        )
+        w3 = Web3(w3_provider)
         w3.middleware_onion.inject(geth_poa_middleware, layer=0)  # Inject middleware for Goerli
         w3.middleware_onion.add(
-            rps_limit_middleware(
-                rps_limit=rps_limit,
-                sleep_time=sleep_time
-            )
+            self._create_middleware(provider)
         )
         return w3
+
+    def _init_w3(self, provider: BaseProvider):
+        if isinstance(provider, HTTPProvider):
+            self._w3 = self._create_http_w3_provider(provider)
+        else:
+            raise NotImplementedError(f"Provider {provider} is not implemented for {self.name}")
 
     def _create_contract_from_token(self, token: Token) -> Contract:
         contract_address = convert_addresses_to_checksum(self._w3, token.contract_address)
