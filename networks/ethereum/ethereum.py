@@ -39,7 +39,6 @@ def convert_addresses_to_checksum(w3: Web3, *addresses) -> Union[ChecksumAddress
 class EthereumNetwork(BaseNetwork):
     name = Networks.ETHEREUM
     ETH_TO_WEI = 10 ** 18
-    gas_error = 100_000
 
     def __init__(self, provider: BaseProvider):
         super().__init__(provider)

@@ -40,7 +40,7 @@ class BaseNetwork(ABC):
 
     def _assert_wallet_has_enough_gas(self, wallet: Wallet, gas: int):
         current_balance = self.get_gas_balance(wallet)
-        if current_balance + self.gas_error < gas:
+        if current_balance < gas:
             raise NotEnoughGas(f"Not enough gas to execute the transfer: "
                                f"{current_balance=} < {gas=}")
 
@@ -54,10 +54,6 @@ class BaseNetwork(ABC):
     @abstractmethod
     def name(self) -> Networks:
         pass
-
-    @property
-    def gas_error(self) -> int:
-        return 0
 
     @abstractmethod
     def create_wallet(self) -> Wallet:
